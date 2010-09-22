@@ -38,7 +38,7 @@ type Conn struct {
 type Job struct {
 	Id uint64
 	Body string
-	c *Conn
+	C *Conn
 }
 
 // Represents a single tube. Provides methods that operate on one tube,
@@ -52,7 +52,7 @@ type Tube struct {
 // once, especially Reserve.
 type TubeSet struct {
 	Names []string
-	µsTimeout uint64
+	UsTimeout uint64
 	C *Conn
 }
 
@@ -654,7 +654,7 @@ func NewTubeSet(c *Conn, names []string) (*TubeSet, os.Error) {
 // Reserve a job from any one of the tubes in t.
 func (t TubeSet) Reserve() (*Job, os.Error) {
 	for {
-		r := t.cmd("reserve-with-timeout %d\r\n", seconds(t.µsTimeout))
+		r := t.cmd("reserve-with-timeout %d\r\n", seconds(t.UsTimeout))
 		j, err := r.checkForJob(t.C, "RESERVED")
 		e, ok := err.(Error)
 		if ok && e.Error == deadlineSoon {
@@ -704,27 +704,27 @@ func (t Tube) Pause(µs uint64) os.Error {
 
 // Delete job j.
 func (j Job) Delete() os.Error {
-	return j.c.cmd("delete %d\r\n", j.Id).checkForWord(j.c, "DELETED")
+	return j.C.cmd("delete %d\r\n", j.Id).checkForWord(j.C, "DELETED")
 }
 
 // Touch job j.
 func (j Job) Touch() os.Error {
-	return j.c.cmd("touch %d\r\n", j.Id).checkForWord(j.c, "TOUCHED")
+	return j.C.cmd("touch %d\r\n", j.Id).checkForWord(j.C, "TOUCHED")
 }
 
 // Bury job j and change its priority to pri.
 func (j Job) Bury(pri uint32) os.Error {
-	return j.c.cmd("bury %d %d\r\n", j.Id, pri).checkForWord(j.c, "BURIED")
+	return j.C.cmd("bury %d %d\r\n", j.Id, pri).checkForWord(j.C, "BURIED")
 }
 
 // Release job j, changing its priority to pri and its delay to delay.
 func (j Job) Release(pri uint32, µsDelay uint64) os.Error {
-	r := j.c.cmd("release %d %d %d\r\n", j.Id, pri, seconds(µsDelay))
-	return r.checkForWord(j.c, "RELEASED")
+	r := j.C.cmd("release %d %d %d\r\n", j.Id, pri, seconds(µsDelay))
+	return r.checkForWord(j.C, "RELEASED")
 }
 
 // Get statistics on job j.
 func (j Job) Stats() (map[string]string, os.Error) {
-	return j.c.cmd("stats-job %d\r\n", j.Id).checkForDict(j.c)
+	return j.C.cmd("stats-job %d\r\n", j.Id).checkForDict(j.C)
 }
 
