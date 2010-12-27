@@ -450,17 +450,17 @@ func (c *Conn) cmdWait(cmd string, tube string, tubes []string) result {
 }
 
 func (c *Conn) cmd(format string, a ...interface{}) result {
-	cmd := fmt.Sprintf(format, a)
+	cmd := fmt.Sprintf(format, a...)
 	return c.cmdWait(cmd, "", []string{})
 }
 
 func (t Tube) cmd(format string, a ...interface{}) result {
-	cmd := fmt.Sprintf(format, a)
+	cmd := fmt.Sprintf(format, a...)
 	return t.c.cmdWait(cmd, t.Name, []string{})
 }
 
 func (t TubeSet) cmd(format string, a ...interface{}) result {
-	cmd := fmt.Sprintf(format, a)
+	cmd := fmt.Sprintf(format, a...)
 	return t.c.cmdWait(cmd, "", t.Names)
 }
 
