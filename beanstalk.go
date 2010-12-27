@@ -38,22 +38,22 @@ type Conn struct {
 type Job struct {
 	Id uint64
 	Body string
-	c *Conn
+	C *Conn
 }
 
 // Represents a single tube. Provides methods that operate on one tube,
 // especially Put.
 type Tube struct {
 	Name string
-	c *Conn
+	C *Conn
 }
 
 // Represents a set of tubes. Provides methods that operate on several tubes at
 // once, especially Reserve.
 type TubeSet struct {
 	Names []string
-	µsTimeout uint64
-	c *Conn
+	UsTimeout uint64
+	C *Conn
 }
 
 // Implements os.Error
@@ -356,7 +356,7 @@ func maps(f func(string) string, ss []string) (out []string) {
 	for i, s := range ss {
 		out[i] = f(s)
 	}
-	return
+	return out
 }
 
 func recv(raw io.Reader, ops <-chan op) {
@@ -370,7 +370,7 @@ func recv(raw io.Reader, ops <-chan op) {
 			return
 		}
 
-		split := maps(strings.TrimSpace, strings.Split(line, " ", 0))
+		split := maps(strings.TrimSpace, strings.Split(line, " ", -1))
 		reply, args := split[0], split[1:]
 
 		// Read the body, if any.
@@ -456,12 +456,12 @@ func (c *Conn) cmd(format string, a ...interface{}) result {
 
 func (t Tube) cmd(format string, a ...interface{}) result {
 	cmd := fmt.Sprintf(format, a...)
-	return t.c.cmdWait(cmd, t.Name, []string{})
+	return t.C.cmdWait(cmd, t.Name, []string{})
 }
 
 func (t TubeSet) cmd(format string, a ...interface{}) result {
 	cmd := fmt.Sprintf(format, a...)
-	return t.c.cmdWait(cmd, "", t.Names)
+	return t.C.cmdWait(cmd, "", t.Names)
 }
 
 // Put a job into the queue and return its id.
@@ -472,7 +472,7 @@ func (t TubeSet) cmd(format string, a ...interface{}) result {
 // The delay and ttr are measured in microseconds.
 func (t Tube) Put(body string, pri uint32, µsDelay, µsTTR uint64) (id uint64, err os.Error) {
 	r := t.cmd("put %d %d %d %d\r\n%s\r\n", pri, seconds(µsDelay), seconds(µsTTR), len(body), body)
-	return r.checkForInt(t.c, "INSERTED")
+	return r.checkForInt(t.C, "INSERTED")
 }
 
 func (r result) checkForJob(c *Conn, s string) (*Job, os.Error) {
@@ -654,8 +654,8 @@ func NewTubeSet(c *Conn, names []string) (*TubeSet, os.Error) {
 // Reserve a job from any one of the tubes in t.
 func (t TubeSet) Reserve() (*Job, os.Error) {
 	for {
-		r := t.cmd("reserve-with-timeout %d\r\n", seconds(t.µsTimeout))
-		j, err := r.checkForJob(t.c, "RESERVED")
+		r := t.cmd("reserve-with-timeout %d\r\n", seconds(t.UsTimeout))
+		j, err := r.checkForJob(t.C, "RESERVED")
 		e, ok := err.(Error)
 		if ok && e.Error == deadlineSoon {
 			// Retry automatically
@@ -669,62 +669,62 @@ func (t TubeSet) Reserve() (*Job, os.Error) {
 
 // Get a copy of the next ready job in this tube, if any.
 func (t Tube) PeekReady() (*Job, os.Error) {
-	return t.cmd("peek-ready\r\n").checkForJob(t.c, "FOUND")
+	return t.cmd("peek-ready\r\n").checkForJob(t.C, "FOUND")
 }
 
 // Get a copy of the next delayed job in this tube, if any.
 func (t Tube) PeekDelayed() (*Job, os.Error) {
-	return t.cmd("peek-delayed\r\n").checkForJob(t.c, "FOUND")
+	return t.cmd("peek-delayed\r\n").checkForJob(t.C, "FOUND")
 }
 
 // Get a copy of a buried job in this tube, if any.
 func (t Tube) PeekBuried() (*Job, os.Error) {
-	return t.cmd("peek-buried\r\n").checkForJob(t.c, "FOUND")
+	return t.cmd("peek-buried\r\n").checkForJob(t.C, "FOUND")
 }
 
 // Get statistics on tube t.
 func (t Tube) Stats() (map[string]string, os.Error) {
 	// Note: do not use t.cmd -- this doesn't depend on the "currently
 	// used" tube.
-	return t.c.cmd("stats-tube %s\r\n", t.Name).checkForDict(t.c)
+	return t.C.cmd("stats-tube %s\r\n", t.Name).checkForDict(t.C)
 }
 
 // Kick up to n jobs in tube t.
 func (t Tube) Kick(n uint64) (uint64, os.Error) {
-	return t.cmd("kick %d\r\n", n).checkForInt(t.c, "KICKED")
+	return t.cmd("kick %d\r\n", n).checkForInt(t.C, "KICKED")
 }
 
 // Pause tube t for µs microseconds.
 func (t Tube) Pause(µs uint64) os.Error {
 	// Note: do not use t.cmd -- this doesn't depend on the "currently
 	// used" tube.
-	r := t.c.cmd("pause-tube %s %d\r\n", t.Name, µs)
-	return r.checkForWord(t.c, "PAUSED")
+	r := t.C.cmd("pause-tube %s %d\r\n", t.Name, µs)
+	return r.checkForWord(t.C, "PAUSED")
 }
 
 // Delete job j.
 func (j Job) Delete() os.Error {
-	return j.c.cmd("delete %d\r\n", j.Id).checkForWord(j.c, "DELETED")
+	return j.C.cmd("delete %d\r\n", j.Id).checkForWord(j.C, "DELETED")
 }
 
 // Touch job j.
 func (j Job) Touch() os.Error {
-	return j.c.cmd("touch %d\r\n", j.Id).checkForWord(j.c, "TOUCHED")
+	return j.C.cmd("touch %d\r\n", j.Id).checkForWord(j.C, "TOUCHED")
 }
 
 // Bury job j and change its priority to pri.
 func (j Job) Bury(pri uint32) os.Error {
-	return j.c.cmd("bury %d %d\r\n", j.Id, pri).checkForWord(j.c, "BURIED")
+	return j.C.cmd("bury %d %d\r\n", j.Id, pri).checkForWord(j.C, "BURIED")
 }
 
 // Release job j, changing its priority to pri and its delay to delay.
 func (j Job) Release(pri uint32, µsDelay uint64) os.Error {
-	r := j.c.cmd("release %d %d %d\r\n", j.Id, pri, seconds(µsDelay))
-	return r.checkForWord(j.c, "RELEASED")
+	r := j.C.cmd("release %d %d %d\r\n", j.Id, pri, seconds(µsDelay))
+	return r.checkForWord(j.C, "RELEASED")
 }
 
 // Get statistics on job j.
 func (j Job) Stats() (map[string]string, os.Error) {
-	return j.c.cmd("stats-job %d\r\n", j.Id).checkForDict(j.c)
+	return j.C.cmd("stats-job %d\r\n", j.Id).checkForDict(j.C)
 }
 
