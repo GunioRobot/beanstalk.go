@@ -635,7 +635,7 @@ func NewTube(c *Conn, name string) (*Tube, os.Error) {
 	if !okTubeChars(name) {
 		return nil, TubeError{name, IllegalChar}
 	}
-	return &Tube{name, c}, nil
+	return &Tube{Name: name, C: c}, nil
 }
 
 // Returns an error if any of the tube names are invalid.
