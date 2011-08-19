@@ -4,7 +4,7 @@ beanstalk.go is a client library for the protocol used by [beanstalkd][].
 
 ## Installation
 
-No need for that. Just put `import "github.com/kr/beanstalk.go.git"` at the
+No need for that. Just put `import "github.com/kr/beanstalk.go"` at the
 top of your go package, and install your own package with [goinstall][].
 
 ## Overview
@@ -53,7 +53,7 @@ A producer:
 
     package main
 
-    import "github.com/kr/beanstalk.go.git"
+    import "github.com/kr/beanstalk.go"
 
     func main() {
         conn, err := beanstalk.Dial("localhost:11300")
@@ -64,7 +64,7 @@ And a worker:
 
     package main
 
-    import "github.com/kr/beanstalk.go.git"
+    import "github.com/kr/beanstalk.go"
 
     func main() {
         conn, err := beanstalk.Dial("localhost:11300")
