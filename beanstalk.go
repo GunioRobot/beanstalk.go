@@ -479,7 +479,7 @@ func (t Tube) cmd(format string, a ...interface{}) result {
 
 func (t TubeSet) cmd(format string, a ...interface{}) result {
 	cmd := fmt.Sprintf(format, a...)
-	return t.c.cmdWait(cmd, "", t.Names)
+	return t.C.cmdWait(cmd, "", t.Names)
 }
 
 // Put a job into the queue and return its id.
