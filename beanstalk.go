@@ -370,7 +370,7 @@ func recv(raw io.Reader, ops <-chan op) {
 			return
 		}
 
-		split := maps(strings.TrimSpace, strings.Split(line, " ", -1))
+		split := maps(strings.TrimSpace, strings.Split(line, " "))
 		reply, args := split[0], split[1:]
 
 		// Read the body, if any.
@@ -419,7 +419,7 @@ func bigChan() (chan<- op, <-chan op) {
 
 // Dial the beanstalkd server at remote address addr.
 func Dial(addr string) (*Conn, os.Error) {
-	rw, err := net.Dial("tcp", "", addr)
+	rw, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
@@ -549,9 +549,9 @@ func parseDict(s string) map[string]string {
 		s = s[3:]
 	}
 	s = strings.TrimSpace(s)
-	lines := strings.Split(s, "\n", 0)
+	lines := strings.SplitN(s, "\n", 0)
 	for _, line := range lines {
-		kv := strings.Split(line, ": ", 2)
+		kv := strings.SplitN(line, ": ", 2)
 		if len(kv) != 2 {
 			continue
 		}
@@ -566,7 +566,7 @@ func parseList(s string) []string {
 		s = s[3:]
 	}
 	s = strings.TrimSpace(s)
-	lines := strings.Split(s, "\n", 0)
+	lines := strings.SplitN(s, "\n", 0)
 	a := make([]string, 0, len(lines))
 	for _, line := range lines {
 		if !strings.HasPrefix(line, "- ") {
