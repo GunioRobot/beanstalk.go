@@ -163,11 +163,24 @@ func push(ops []op, o op) []op {
 
 // Read from toSend as many items as possible without blocking.
 func collect(toSend <-chan op) (ops []op) {
-	o, more := <-toSend, true // blocking
-
-	for more {
+	o, more := <-toSend // blocking
+	
+	if more {
 		ops = push(ops, o)
-		o, more = <-toSend // non-blocking
+	}
+	
+	//non blocking
+	for {
+		select {
+			case o, more := <-toSend:
+				if more {
+					ops = push(ops, o)
+				}
+				break
+			default:
+				return
+				break
+		}
 	}
 
 	return
@@ -386,6 +399,11 @@ func recv(raw io.Reader, ops <-chan op) {
 			if r != n {
 				panic("3 todo properly teardown the Conn")
 			}
+			
+			//trash the trailing \r\n
+			if _, err := io.ReadFull(rd, make([]byte, 2)); err != nil { 
+				panic("4 todo properly teardown the Conn")
+		    }
 		}
 
 		// Get the corresponding op and deliver the result.
@@ -461,7 +479,7 @@ func (t Tube) cmd(format string, a ...interface{}) result {
 
 func (t TubeSet) cmd(format string, a ...interface{}) result {
 	cmd := fmt.Sprintf(format, a...)
-	return t.C.cmdWait(cmd, "", t.Names)
+	return t.c.cmdWait(cmd, "", t.Names)
 }
 
 // Put a job into the queue and return its id.
@@ -727,4 +745,3 @@ func (j Job) Release(pri uint32, µsDelay uint64) os.Error {
 func (j Job) Stats() (map[string]string, os.Error) {
 	return j.C.cmd("stats-job %d\r\n", j.Id).checkForDict(j.C)
 }
-
