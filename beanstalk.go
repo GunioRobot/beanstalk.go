@@ -164,11 +164,11 @@ func push(ops []op, o op) []op {
 // Read from toSend as many items as possible without blocking.
 func collect(toSend <-chan op) (ops []op) {
 	o, more := <-toSend // blocking
-	
+
 	if more {
 		ops = push(ops, o)
 	}
-	
+
 	//non blocking
 	for {
 		select {
@@ -399,9 +399,9 @@ func recv(raw io.Reader, ops <-chan op) {
 			if r != n {
 				panic("3 todo properly teardown the Conn")
 			}
-			
+
 			//trash the trailing \r\n
-			if _, err := io.ReadFull(rd, make([]byte, 2)); err != nil { 
+			if _, err := io.ReadFull(rd, make([]byte, 2)); err != nil {
 				panic("4 todo properly teardown the Conn")
 		    }
 		}
